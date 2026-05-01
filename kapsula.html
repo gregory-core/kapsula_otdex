@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Атмосферный плеер — Фон и Музыка</title>
+    <style>
+        :root {
+            --transition-speed: 0.8s;
+            --glass-bg: rgba(0, 0, 0, 0.35);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --text: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.85);
+            --accent: #ffb347;
+            --card-radius: 20px;
+            --blur: 22px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, sans-serif;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background var(--transition-speed) ease;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            position: relative;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Фоновый слой с градиентом */
+        .bg-layer {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            transition: opacity var(--transition-speed) ease,
+                background var(--transition-speed) ease;
+            pointer-events: none;
+        }
+
+        /* Анимированные частицы/звёзды для космоса */
+        .particles-canvas {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 1.2s ease;
+        }
+
+        .particles-canvas.active {
+            opacity: 1;
+        }
+
+        /* Основной контейнер */
+        .main-container {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 28px;
+            padding: 20px;
+            width: 100%;
+            max-width: 700px;
+        }
+
+        /* Заголовок */
+        .title-block {
+            text-align: center;
+            backdrop-filter: blur(var(--blur));
+            -webkit-backdrop-filter: blur(var(--blur));
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 40px;
+            padding: 16px 36px;
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.3);
+            transition: all var(--transition-speed) ease;
+        }
+
+        .title-block h1 {
+            color: var(--text);
+            font-size: clamp(1.6rem, 3vw, 2.4rem);
+            font-weight: 600;
+            letter-spacing: 0.03em;
+            margin: 0;
+            text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+        }
+
+        .title-block .subtitle {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 400;
+            margin-top: 4px;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            opacity: 0.8;
+        }
+
+        /* Сетка карточек */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 14px;
+            width: 100%;
+            max-width: 620px;
+        }
+
+        @media (max-width: 600px) {
+            .cards-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 10px;
+            }
+
+            .cards-grid .card:nth-child(4),
+            .cards-grid .card:nth-child(5) {
+                grid-column: span 1;
+            }
+        }
+
+        @media (max-width: 380px) {
+            .cards-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+            }
+        }
+
+        /* Карточка */
+        .card {
+            position: relative;
+            aspect-ratio: 1 / 1.15;
+            border-radius: var(--card-radius);
+            cursor: pointer;
+            overflow: hidden;
+            border: 2px solid transparent;
+            transition: all 0.35s cubic-bezier(0.25, 0.8, 0.25, 1.2);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            background: var(--glass-bg);
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            color: var(--text);
+            font-weight: 600;
+            font-size: 0.95rem;
+            letter-spacing: 0.04em;
+            text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
+        }
+
+        .card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .card:active {
+            transform: scale(0.95);
+            transition: transform 0.15s ease;
+        }
+
+        .card.active {
+            border-color: #ffffff;
+            box-shadow: 0 0 0 5px rgba(255, 255, 255, 0.25), 0 16px 40px rgba(0, 0, 0, 0.5);
+            background: rgba(255, 255, 255, 0.18);
+            transform: translateY(-4px);
+        }
+
+        .card .icon {
+            font-size: 2.6rem;
+            line-height: 1;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover .icon {
+            transform: scale(1.15);
+        }
+
+        .card .label {
+            font-size: 0.85rem;
+            text-align: center;
+            line-height: 1.2;
+        }
+
+        /* Превью-миниатюра фона внутри карточки */
+        .card .thumb-bg {
+            position: absolute;
+            inset: 0;
+            z-index: -1;
+            border-radius: var(--card-radius);
+            transition: opacity 0.5s ease;
+        }
+
+        /* Блок управления звуком */
+        .sound-control {
+            backdrop-filter: blur(var(--blur));
+            -webkit-backdrop-filter: blur(var(--blur));
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 40px;
+            padding: 14px 28px;
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.3);
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .sound-control .btn {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            border-radius: 30px;
+            padding: 10px 20px;
+            color: #fff;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            letter-spacing: 0.03em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            white-space: nowrap;
+        }
+
+        .sound-control .btn:hover {
+            background: rgba(255, 255, 255, 0.28);
+            border-color: rgba(255, 255, 255, 0.7);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .sound-control .btn.mute-btn {
+            background: rgba(255, 80, 80, 0.3);
+            border-color: rgba(255, 130, 130, 0.5);
+        }
+
+        .volume-slider {
+            -webkit-appearance: none;
+            width: 100px;
+            height: 6px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.35);
+            outline: none;
+            cursor: pointer;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #ffffff;
+            border: 2px solid rgba(0, 0, 0, 0.3);
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+            transition: transform 0.15s ease;
+        }
+
+        .volume-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .volume-label {
+            color: #fff;
+            font-size: 0.8rem;
+            font-weight: 500;
+            opacity: 0.8;
+            letter-spacing: 0.05em;
+        }
+
+        /* Индикатор текущего трека */
+        .now-playing {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            font-weight: 500;
+            letter-spacing: 0.05em;
+            text-align: center;
+            opacity: 0.9;
+            text-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
+            min-height: 20px;
+            transition: all 0.4s ease;
+        }
+
+        /* Анимация пульсации для активной карточки */
+        @keyframes subtlePulse {
+
+            0%,
+            100% {
+                box-shadow: 0 0 0 5px rgba(255, 255, 255, 0.25), 0 16px 40px rgba(0, 0, 0, 0.5);
+            }
+
+            50% {
+                box-shadow: 0 0 0 12px rgba(255, 255, 255, 0.08), 0 16px 40px rgba(0, 0, 0, 0.5);
+            }
+        }
+
+        .card.active {
+            animation: subtlePulse 2.8s ease-in-out infinite;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Фоновый слой -->
+    <div class="bg-layer" id="bgLayer"></div>
+
+    <!-- Канвас для частиц (звёзды в космосе) -->
+    <canvas class="particles-canvas" id="particlesCanvas"></canvas>
+
+    <!-- Основной контент -->
+    <div class="main-container">
+        <!-- Заголовок -->
+        <div class="title-block">
+            <h1>🌿 Атмосферный плеер</h1>
+            <p class="subtitle">Выбери фон и музыку</p>
+        </div>
+
+        <!-- Сетка выбора -->
+        <div class="cards-grid" id="cardsGrid">
+            <!-- Карточки генерируются JS -->
+        </div>
+
+        <!-- Индикатор -->
+        <div class="now-playing" id="nowPlaying">🎵 Нажми на карточку, чтобы начать</div>
+
+        <!-- Управление звуком -->
+        <div class="sound-control" id="soundControl">
+            <button class="btn" id="playPauseBtn" title="Воспроизведение / Пауза">
+                <span id="playIcon">▶</span> <span id="playLabel">Играть</span>
+            </button>
+            <button class="btn mute-btn" id="muteBtn" title="Выключить звук">
+                🔊
+            </button>
+            <span class="volume-label">Громкость</span>
+            <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="55" title="Громкость">
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            // ==================== ДАННЫЕ ТЕМ ====================
+            const themes = [{
+                id: 'forest',
+                name: 'Лес',
+                icon: '🌲',
+                bgGradient: 'linear-gradient(135deg, #1a3c2a 0%, #2d5a3f 25%, #3f784b 50%, #5a9e5f 75%, #7db87a 100%)',
+                bgImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 800 600\'%3E%3Cdefs%3E%3CradialGradient id=\'g\' cx=\'40%25\' cy=\'30%25\'%3E%3Cstop offset=\'0%25\' stop-color=\'%23a8d8a0\'/%3E%3Cstop offset=\'60%25\' stop-color=\'%232d5a3f\'/%3E%3Cstop offset=\'100%25\' stop-color=\'%230d1f14\'/%3E%3C/radialGradient%3E%3C/defs%3E%3Crect fill=\'url(%23g)\' width=\'800\' height=\'600\'/%3E%3C/svg%3E")',
+                soundType: 'forest',
+                description: 'Пение птиц и шелест листвы'
+            }, {
+                id: 'ocean',
+                name: 'Океан',
+                icon: '🌊',
+                bgGradient: 'linear-gradient(135deg, #0b3d5c 0%, #1a6b8a 25%, #2d9abf 50%, #5bbcd6 75%, #8dd8e8 100%)',
+                bgImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 800 600\'%3E%3Cdefs%3E%3CradialGradient id=\'g\' cx=\'50%25\' cy=\'40%25\'%3E%3Cstop offset=\'0%25\' stop-color=\'%2366d9ff\'/%3E%3Cstop offset=\'50%25\' stop-color=\'%231a6b8a\'/%3E%3Cstop offset=\'100%25\' stop-color=\'%23061e2f\'/%3E%3C/radialGradient%3E%3C/defs%3E%3Crect fill=\'url(%23g)\' width=\'800\' height=\'600\'/%3E%3C/svg%3E")',
+                soundType: 'ocean',
+                description: 'Шум волн и морской бриз'
+            }, {
+                id: 'space',
+                name: 'Космос',
+                icon: '🌌',
+                bgGradient: 'linear-gradient(135deg, #0a0a1a 0%, #12102f 25%, #1a1040 50%, #251860 75%, #3a2090 100%)',
+                bgImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 800 600\'%3E%3Cdefs%3E%3CradialGradient id=\'g\' cx=\'50%25\' cy=\'50%25\'%3E%3Cstop offset=\'0%25\' stop-color=\'%232a1858\'/%3E%3Cstop offset=\'100%25\' stop-color=\'%2303030f\'/%3E%3C/radialGradient%3E%3C/defs%3E%3Crect fill=\'url(%23g)\' width=\'800\' height=\'600\'/%3E%3C/svg%3E")',
+                soundType: 'space',
+                description: 'Глубокий эмбиент и звёздный ветер',
+                hasParticles: true
+            }, {
+                id: 'rain',
+                name: 'Дождь',
+                icon: '🌧️',
+                bgGradient: 'linear-gradient(135deg, #2c3e50 0%, #3e5568 25%, #546e7a 50%, #78909c 75%, #9eacb4 100%)',
+                bgImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 800 600\'%3E%3Cdefs%3E%3CradialGradient id=\'g\' cx=\'50%25\' cy=\'30%25\'%3E%3Cstop offset=\'0%25\' stop-color=\'%238a9faf\'/%3E%3Cstop offset=\'100%25\' stop-color=\'%231c2833\'/%3E%3C/radialGradient%3E%3C/defs%3E%3Crect fill=\'url(%23g)\' width=\'800\' height=\'600\'/%3E%3C/svg%3E")',
+                soundType: 'rain',
+                description: 'Успокаивающий шум дождя'
+            }, {
+                id: 'city',
+                name: 'Город',
+                icon: '🏙️',
+                bgGradient: 'linear-gradient(135deg, #1a1a2e 0%, #2d2d44 25%, #4a3f5c 50%, #6b5b7b 75%, #9b8ba8 100%)',
+                bgImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 800 600\'%3E%3Cdefs%3E%3CradialGradient id=\'g\' cx=\'50%25\' cy=\'60%25\'%3E%3Cstop offset=\'0%25\' stop-color=\'%239b8ba8\'/%3E%3Cstop offset=\'100%25\' stop-color=\'%2311111f\'/%3E%3C/radialGradient%3E%3C/defs%3E%3Crect fill=\'url(%23g)\' width=\'800\' height=\'600\'/%3E%3C/svg%3E")',
+                soundType: 'city',
+                description: 'Вечерний городской эмбиент'
+            }];
+
+            // ==================== СОСТОЯНИЕ ====================
+            let currentThemeId = 'forest';
+            let isPlaying = false;
+            let isMuted = false;
+            let volume = 0.55;
+            let audioContext = null;
+            let activeSoundNodes = [];
+            let soundStopFunctions = [];
+
+            // ==================== DOM ЭЛЕМЕНТЫ ====================
+            const bgLayer = document.getElementById('bgLayer');
+            const particlesCanvas = document.getElementById('particlesCanvas');
+            const cardsGrid = document.getElementById('cardsGrid');
+            const nowPlaying = document.getElementById('nowPlaying');
+            const playPauseBtn = document.getElementById('playPauseBtn');
+            const playIcon = document.getElementById('playIcon');
+            const playLabel = document.getElementById('playLabel');
+            const muteBtn = document.getElementById('muteBtn');
+            const volumeSlider = document.getElementById('volumeSlider');
+
+            // ==================== AUDIO CONTEXT ====================
+            function getAudioContext() {
+                if (!audioContext || audioContext.state === 'closed') {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
+                return audioContext;
+            }
+
+            // Глобальный GainNode для управления громкостью
+            let masterGain = null;
+
+            function getMasterGain() {
+                const ctx = getAudioContext();
+                if (!masterGain || masterGain.context !== ctx) {
+                    masterGain = ctx.createGain();
+                    masterGain.gain.value = isMuted ? 0 : volume;
+                    masterGain.connect(ctx.destination);
+                }
+                return masterGain;
+            }
+
+            function updateMasterVolume() {
+                if (masterGain) {
+                    masterGain.gain.value = isMuted ? 0 : volume;
+                }
+            }
+
+            // ==================== ГЕНЕРАТОРЫ ЗВУКОВ ====================
+            function stopAllSounds() {
+                soundStopFunctions.forEach(fn => {
+                    try { fn(); } catch (e) { /* ignore */ }
+                });
+                soundStopFunctions = [];
+                activeSoundNodes.forEach(node => {
+                    try {
+                        node.disconnect();
+                        if (node.stop && typeof node.stop === 'function') node.stop();
+                    } catch (e) { /* ignore */ }
+                });
+                activeSoundNodes = [];
+            }
+
+            // --- Лес: пение птиц (частотная модуляция) + лёгкий шум листвы ---
+            function startForestSound() {
+                const ctx = getAudioContext();
+                const master = getMasterGain();
+                const stops = [];
+
+                // Лёгкий ветер/листва — фильтрованный розовый шум
+                const bufferSize = 2 * ctx.sampleRate;
+                const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+                const data = noiseBuffer.getChannelData(0);
+                let b0 = 0,
+                    b1 = 0,
+                    b2 = 0;
+                for (let i = 0; i < bufferSize; i++) {
+                    const white = Math.random() * 2 - 1;
+                    b0 = 0.99886 * b0 + white * 0.0555179;
+                    b1 = 0.99332 * b1 + white * 0.0750759;
+                    b2 = 0.969 * b2 + white * 0.153852;
+                    data[i] = (b0 + b1 + b2) * 0.08;
+                }
+                const noiseSource = ctx.createBufferSource();
+                noiseSource.buffer = noiseBuffer;
+                noiseSource.loop = true;
+                const noiseFilter = ctx.createBiquadFilter();
+                noiseFilter.type = 'lowpass';
+                noiseFilter.frequency.value = 600;
+                noiseFilter.Q.value = 0.5;
+                const noiseGain = ctx.createGain();
+                noiseGain.gain.value = 0.25;
+                noiseSource.connect(noiseFilter);
+                noiseFilter.connect(noiseGain);
+                noiseGain.connect(master);
+                noiseSource.start();
+                activeSoundNodes.push(noiseSource, noiseFilter, noiseGain);
+                stops.push(() => {
+                    try { noiseSource.stop(); } catch (e) { }
+                    noiseSource.disconnect();
+                    noiseFilter.disconnect();
+                    noiseGain.disconnect();
+                });
+
+                // Птицы: несколько осцилляторов с частотной модуляцией
+                function createBird(baseFreq, modFreq, modDepth, gainVal, panVal) {
+                    const carrier = ctx.createOscillator();
+                    carrier.type = 'sine';
+                    carrier.frequency.value = baseFreq;
+                    const modulator = ctx.createOscillator();
+                    modulator.type = 'sine';
+                    modulator.frequency.value = modFreq;
+                    const modGain = ctx.createGain();
+                    modGain.gain.value = modDepth;
+                    modulator.connect(modGain);
+                    modGain.connect(carrier.frequency);
+                    const birdGain = ctx.createGain();
+                    birdGain.gain.value = gainVal;
+                    const panner = ctx.createStereoPanner();
+                    panner.pan.value = panVal;
+                    carrier.connect(birdGain);
+                    birdGain.connect(panner);
+                    panner.connect(master);
+                    carrier.start();
+                    modulator.start();
+                    activeSoundNodes.push(carrier, modulator, modGain, birdGain, panner);
+                    return () => {
+                        try { carrier.stop(); } catch (e) { }
+                        try { modulator.stop(); } catch (e) { }
+                        carrier.disconnect();
+                        modulator.disconnect();
+                        modGain.disconnect();
+                        birdGain.disconnect();
+                        panner.disconnect();
+                    };
+                }
+
+                // Несколько "птиц" с разными параметрами
+                stops.push(createBird(2200, 18, 150, 0.06, -0.5));
+                stops.push(createBird(2800, 22, 180, 0.05, 0.3));
+                stops.push(createBird(3100, 25, 200, 0.04, 0.6));
+                stops.push(createBird(1950, 15, 120, 0.055, -0.7));
+                stops.push(createBird(3400, 28, 170, 0.035, 0.1));
+
+                // Периодические "трели" — быстрые модуляции
+                const trillInterval = setInterval(() => {
+                    if (!isPlaying) return;
+                    const trillBird = createBird(
+                        2600 + Math.random() * 800,
+                        30 + Math.random() * 20,
+                        250 + Math.random() * 150,
+                        0.04,
+                        (Math.random() - 0.5) * 1.4
+                    );
+                    const trillStop = trillBird;
+                    stops.push(trillStop);
+                    setTimeout(() => {
+                        trillStop();
+                        const idx = stops.indexOf(trillStop);
+                        if (idx > -1) stops.splice(idx, 1);
+                    }, 300 + Math.random() * 400);
+                }, 2000 + Math.random() * 3000);
+                stops.push(() => clearInterval(trillInterval));
+
+                soundStopFunctions = stops;
+            }
+
+            // --- Океан: ритмичный шум волн ---
+            function startOceanSound() {
+                const ctx = getAudioContext();
+                const master = getMasterGain();
+                const stops = [];
+
+                // Базовый шум океана
+                const bufferSize = 4 * ctx.sampleRate;
+                const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+                const data = noiseBuffer.getChannelData(0);
+                let b0 = 0,
+                    b1 = 0,
+                    b2 = 0;
+                for (let i = 0; i < bufferSize; i++) {
+                    const white = Math.random() * 2 - 1;
+                    b0 = 0.99886 * b0 + white * 0.0555179;
+                    b1 = 0.99332 * b1 + white * 0.0750759;
+                    b2 = 0.969 * b2 + white * 0.153852;
+                    data[i] = (b0 + b1 + b2) * 0.15;
+                }
+                const noiseSource = ctx.createBufferSource();
+                noiseSource.buffer = noiseBuffer;
+                noiseSource.loop = true;
+                const noiseFilter = ctx.createBiquadFilter();
+                noiseFilter.type = 'lowpass';
+                noiseFilter.frequency.value = 350;
+                noiseFilter.Q.value = 0.3;
+                const noiseGain = ctx.createGain();
+                noiseGain.gain.value = 0.7;
+
+                // LFO для имитации приливов
+                const lfo = ctx.createOscillator();
+                lfo.type = 'sine';
+                lfo.frequency.value = 0.07; // Медленный ритм волн
+                const lfoGain = ctx.createGain();
+                lfoGain.gain.value = 0.35;
+                lfo.connect(lfoGain);
+                lfoGain.connect(noiseGain.gain);
+                lfo.start();
+                activeSoundNodes.push(lfo, lfoGain);
+
+                noiseSource.connect(noiseFilter);
+                noiseFilter.connect(noiseGain);
+                noiseGain.connect(master);
+                noiseSource.start();
+                activeSoundNodes.push(noiseSource, noiseFilter, noiseGain);
+                stops.push(() => {
+                    try { noiseSource.stop(); } catch (e) { }
+                    try { lfo.stop(); } catch (e) { }
+                    noiseSource.disconnect();
+                    noiseFilter.disconnect();
+                    noiseGain.disconnect();
+                    lfo.disconnect();
+                    lfoGain.disconnect();
+                });
+
+                soundStopFunctions = stops;
+            }
+
+            // --- Космос: глубокий эмбиент с реверберацией ---
+            function startSpaceSound() {
+                const ctx = getAudioContext();
+                const master = getMasterGain();
+                const stops = [];
+
+                // Несколько медленно меняющихся тонов
+                const frequencies = [55, 82.4, 110, 146.8, 220];
+                frequencies.forEach((freq, i) => {
+                    const osc = ctx.createOscillator();
+                    osc.type = 'sine';
+                    osc.frequency.value = freq;
+                    // Медленная модуляция частоты
+                    const modOsc = ctx.createOscillator();
+                    modOsc.type = 'sine';
+                    modOsc.frequency.value = 0.03 + i * 0.012;
+                    const modGain = ctx.createGain();
+                    modGain.gain.value = 1.5 + i * 0.8;
+                    modOsc.connect(modGain);
+                    modGain.connect(osc.frequency);
+                    modOsc.start();
+                    const oscGain = ctx.createGain();
+                    oscGain.gain.value = 0.06;
+                    const panner = ctx.createStereoPanner();
+                    panner.pan.value = (i - 2) * 0.4;
+                    osc.connect(oscGain);
+                    oscGain.connect(panner);
+                    panner.connect(master);
+                    osc.start();
+                    activeSoundNodes.push(osc, modOsc, modGain, oscGain, panner);
+                    stops.push(() => {
+                        try { osc.stop(); } catch (e) { }
+                        try { modOsc.stop(); } catch (e) { }
+                        osc.disconnect();
+                        modOsc.disconnect();
+                        modGain.disconnect();
+                        oscGain.disconnect();
+                        panner.disconnect();
+                    });
+                });
+
+                // Лёгкий ветер (высокочастотный шум)
+                const bufferSize = 2 * ctx.sampleRate;
+                const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+                const data = noiseBuffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = (Math.random() * 2 - 1) * 0.04;
+                }
+                const noiseSource = ctx.createBufferSource();
+                noiseSource.buffer = noiseBuffer;
+                noiseSource.loop = true;
+                const noiseFilter = ctx.createBiquadFilter();
+                noiseFilter.type = 'bandpass';
+                noiseFilter.frequency.value = 3000;
+                noiseFilter.Q.value = 0.2;
+                const noiseGain = ctx.createGain();
+                noiseGain.gain.value = 0.08;
+                noiseSource.connect(noiseFilter);
+                noiseFilter.connect(noiseGain);
+                noiseGain.connect(master);
+                noiseSource.start();
+                activeSoundNodes.push(noiseSource, noiseFilter, noiseGain);
+                stops.push(() => {
+                    try { noiseSource.stop(); } catch (e) { }
+                    noiseSource.disconnect();
+                    noiseFilter.disconnect();
+                    noiseGain.disconnect();
+                });
+
+                soundStopFunctions = stops;
+            }
+
+            // --- Дождь: белый шум с фильтрацией ---
+            function startRainSound() {
+                const ctx = getAudioContext();
+                const master = getMasterGain();
+                const stops = [];
+
+                const bufferSize = 3 * ctx.sampleRate;
+                const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+                const data = noiseBuffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = (Math.random() * 2 - 1) * 0.6;
+                }
+                const noiseSource = ctx.createBufferSource();
+                noiseSource.buffer = noiseBuffer;
+                noiseSource.loop = true;
+                // Фильтр для характерного звука дождя
+                const hpFilter = ctx.createBiquadFilter();
+                hpFilter.type = 'highpass';
+                hpFilter.frequency.value = 800;
+                hpFilter.Q.value = 0.5;
+                const lpFilter = ctx.createBiquadFilter();
+                lpFilter.type = 'lowpass';
+                lpFilter.frequency.value = 6000;
+                lpFilter.Q.value = 0.7;
+                const noiseGain = ctx.createGain();
+                noiseGain.gain.value = 0.55;
+
+                noiseSource.connect(hpFilter);
+                hpFilter.connect(lpFilter);
+                lpFilter.connect(noiseGain);
+                noiseGain.connect(master);
+                noiseSource.start();
+                activeSoundNodes.push(noiseSource, hpFilter, lpFilter, noiseGain);
+                stops.push(() => {
+                    try { noiseSource.stop(); } catch (e) { }
+                    noiseSource.disconnect();
+                    hpFilter.disconnect();
+                    lpFilter.disconnect();
+                    noiseGain.disconnect();
+                });
+
+                // Редкие "капли" — короткие щелчки
+                const dropInterval = setInterval(() => {
+                    if (!isPlaying) return;
+                    const dropOsc = ctx.createOscillator();
+                    dropOsc.type = 'sine';
+                    dropOsc.frequency.value = 400 + Math.random() * 600;
+                    const dropGain = ctx.createGain();
+                    dropGain.gain.setValueAtTime(0.12, ctx.currentTime);
+                    dropGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
+                    const panner = ctx.createStereoPanner();
+                    panner.pan.value = (Math.random() - 0.5) * 1.5;
+                    dropOsc.connect(dropGain);
+                    dropGain.connect(panner);
+                    panner.connect(master);
+                    dropOsc.start();
+                    dropOsc.stop(ctx.currentTime + 0.1);
+                    activeSoundNodes.push(dropOsc, dropGain, panner);
+                    setTimeout(() => {
+                        dropOsc.disconnect();
+                        dropGain.disconnect();
+                        panner.disconnect();
+                    }, 200);
+                }, 150 + Math.random() * 300);
+                stops.push(() => clearInterval(dropInterval));
+
+                soundStopFunctions = stops;
+            }
+
+            // --- Город: низкий гул + отдалённые сигналы ---
+            function startCitySound() {
+                const ctx = getAudioContext();
+                const master = getMasterGain();
+                const stops = [];
+
+                // Низкий гул (трафик, вентиляция)
+                const bufferSize = 2 * ctx.sampleRate;
+                const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+                const data = noiseBuffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = (Math.random() * 2 - 1) * 0.3;
+                }
+                const noiseSource = ctx.createBufferSource();
+                noiseSource.buffer = noiseBuffer;
+                noiseSource.loop = true;
+                const noiseFilter = ctx.createBiquadFilter();
+                noiseFilter.type = 'lowpass';
+                noiseFilter.frequency.value = 200;
+                noiseFilter.Q.value = 0.4;
+                const noiseGain = ctx.createGain();
+                noiseGain.gain.value = 0.4;
+                noiseSource.connect(noiseFilter);
+                noiseFilter.connect(noiseGain);
+                noiseGain.connect(master);
+                noiseSource.start();
+                activeSoundNodes.push(noiseSource, noiseFilter, noiseGain);
+                stops.push(() => {
+                    try { noiseSource.stop(); } catch (e) { }
+                    noiseSource.disconnect();
+                    noiseFilter.disconnect();
+                    noiseGain.disconnect();
+                });
+
+                // Редкие высокие тона (сигналы, гудки)
+                function playBeep() {
+                    if (!isPlaying) return;
+                    const osc = ctx.createOscillator();
+                    osc.type = 'square';
+                    osc.frequency.value = 600 + Math.random() * 400;
+                    const oscGain = ctx.createGain();
+                    oscGain.gain.setValueAtTime(0.06, ctx.currentTime);
+                    oscGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+                    const panner = ctx.createStereoPanner();
+                    panner.pan.value = (Math.random() - 0.5) * 1.2;
+                    osc.connect(oscGain);
+                    oscGain.connect(panner);
+                    panner.connect(master);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.3);
+                    activeSoundNodes.push(osc, oscGain, panner);
+                    setTimeout(() => {
+                        osc.disconnect();
+                        oscGain.disconnect();
+                        panner.disconnect();
+                    }, 400);
+                }
+                const beepInterval = setInterval(() => {
+                    playBeep();
+                }, 3000 + Math.random() * 5000);
+                stops.push(() => clearInterval(beepInterval));
+
+                soundStopFunctions = stops;
+            }
+
+            // ==================== ЗАПУСК ЗВУКА ТЕМЫ ====================
+            function startSoundForTheme(themeId) {
+                stopAllSounds();
+                if (!isPlaying) return;
+                switch (themeId) {
+                    case 'forest':
+                        startForestSound();
+                        break;
+                    case 'ocean':
+                        startOceanSound();
+                        break;
+                    case 'space':
+                        startSpaceSound();
+                        break;
+                    case 'rain':
+                        startRainSound();
+                        break;
+                    case 'city':
+                        startCitySound();
+                        break;
+                    default:
+                        startForestSound();
+                }
+            }
+
+            // ==================== ЧАСТИЦЫ (ЗВЁЗДЫ) ====================
+            let particlesActive = false;
+            let particlesAnimationId = null;
+            const ctx2d = particlesCanvas.getContext('2d');
+            let stars = [];
+
+            function resizeCanvas() {
+                particlesCanvas.width = window.innerWidth;
+                particlesCanvas.height = window.innerHeight;
+            }
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+
+            function initStars(count = 180) {
+                stars = [];
+                for (let i = 0; i < count; i++) {
+                    stars.push({
+                        x: Math.random() * particlesCanvas.width,
+                        y: Math.random() * particlesCanvas.height,
+                        radius: Math.random() * 2.2 + 0.5,
+                        opacity: Math.random() * 0.8 + 0.2,
+                        twinkleSpeed: Math.random() * 0.02 + 0.005,
+                        twinkleOffset: Math.random() * Math.PI * 2,
+                    });
+                }
+            }
+            initStars();
+
+            function drawStars() {
+                if (!particlesActive) return;
+                ctx2d.clearRect(0, 0, particlesCanvas.width, particlesCanvas.height);
+                const now = performance.now() / 1000;
+                stars.forEach(star => {
+                    const twinkle = Math.sin(now * star.twinkleSpeed * 60 + star.twinkleOffset) * 0.4 + 0.6;
+                    const alpha = star.opacity * twinkle;
+                    ctx2d.beginPath();
+                    ctx2d.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+                    ctx2d.fillStyle = `rgba(255,255,255,${alpha})`;
+                    ctx2d.fill();
+                    // Лёгкое свечение
+                    ctx2d.beginPath();
+                    ctx2d.arc(star.x, star.y, star.radius * 2.5, 0, Math.PI * 2);
+                    ctx2d.fillStyle = `rgba(200,210,255,${alpha * 0.2})`;
+                    ctx2d.fill();
+                });
+                particlesAnimationId = requestAnimationFrame(drawStars);
+            }
+
+            function setParticlesActive(active) {
+                particlesActive = active;
+                if (active) {
+                    particlesCanvas.classList.add('active');
+                    if (!particlesAnimationId) {
+                        drawStars();
+                    }
+                } else {
+                    particlesCanvas.classList.remove('active');
+                    if (particlesAnimationId) {
+                        cancelAnimationFrame(particlesAnimationId);
+                        particlesAnimationId = null;
+                    }
+                    ctx2d.clearRect(0, 0, particlesCanvas.width, particlesCanvas.height);
+                }
+            }
+
+            // ==================== ОТОБРАЖЕНИЕ ТЕМЫ ====================
+            function applyTheme(themeId) {
+                const theme = themes.find(t => t.id === themeId) || themes[0];
+                currentThemeId = theme.id;
+
+                // Фон
+                bgLayer.style.background = theme.bgGradient;
+                if (theme.bgImage) {
+                    bgLayer.style.backgroundImage = theme.bgImage;
+                    bgLayer.style.backgroundSize = 'cover';
+                    bgLayer.style.backgroundPosition = 'center';
+                }
+                bgLayer.style.opacity = '1';
+
+                // Частицы
+                setParticlesActive(!!theme.hasParticles);
+
+                // Обновление активной карточки
+                document.querySelectorAll('.card').forEach(card => {
+                    card.classList.toggle('active', card.dataset.themeId === themeId);
+                });
+
+                // Обновление текста
+                nowPlaying.textContent = `🎵 ${theme.name} — ${theme.description}`;
+
+                // Перезапуск звука, если играет
+                if (isPlaying) {
+                    startSoundForTheme(themeId);
+                }
+            }
+
+            // ==================== ПОСТРОЕНИЕ КАРТОЧЕК ====================
+            function buildCards() {
+                cardsGrid.innerHTML = '';
+                themes.forEach(theme => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.dataset.themeId = theme.id;
+                    card.innerHTML = `
+                        <div class="thumb-bg" style="background: ${theme.bgGradient};"></div>
+                        <span class="icon">${theme.icon}</span>
+                        <span class="label">${theme.name}</span>
+                    `;
+                    card.addEventListener('click', () => {
+                        if (currentThemeId === theme.id && isPlaying) {
+                            // Повторный клик по активной — пауза
+                            pausePlayback();
+                        } else if (currentThemeId === theme.id && !isPlaying) {
+                            // Возобновить
+                            resumePlayback();
+                        } else {
+                            // Новая тема
+                            applyTheme(theme.id);
+                            if (!isPlaying) {
+                                resumePlayback();
+                            }
+                        }
+                    });
+                    cardsGrid.appendChild(card);
+                });
+                // Активируем первую карточку
+                const firstCard = cardsGrid.querySelector(`[data-theme-id="${currentThemeId}"]`);
+                if (firstCard) firstCard.classList.add('active');
+            }
+
+            // ==================== УПРАВЛЕНИЕ ВОСПРОИЗВЕДЕНИЕМ ====================
+            function resumePlayback() {
+                if (isPlaying) return;
+                // Инициализируем AudioContext при первом взаимодействии
+                getAudioContext();
+                getMasterGain();
+                updateMasterVolume();
+                isPlaying = true;
+                playIcon.textContent = '⏸';
+                playLabel.textContent = 'Пауза';
+                startSoundForTheme(currentThemeId);
+            }
+
+            function pausePlayback() {
+                if (!isPlaying) return;
+                isPlaying = false;
+                playIcon.textContent = '▶';
+                playLabel.textContent = 'Играть';
+                stopAllSounds();
+            }
+
+            function togglePlayPause() {
+                if (isPlaying) {
+                    pausePlayback();
+                } else {
+                    resumePlayback();
+                }
+            }
+
+            function toggleMute() {
+                isMuted = !isMuted;
+                muteBtn.textContent = isMuted ? '🔇' : '🔊';
+                if (isMuted) {
+                    muteBtn.style.background = 'rgba(255,50,50,0.5)';
+                } else {
+                    muteBtn.style.background = 'rgba(255,80,80,0.3)';
+                }
+                updateMasterVolume();
+            }
+
+            // ==================== ОБРАБОТЧИКИ СОБЫТИЙ ====================
+            playPauseBtn.addEventListener('click', togglePlayPause);
+            muteBtn.addEventListener('click', toggleMute);
+            volumeSlider.addEventListener('input', () => {
+                volume = parseFloat(volumeSlider.value) / 100;
+                updateMasterVolume();
+            });
+
+            // Глобальные клавиши
+            document.addEventListener('keydown', (e) => {
+                if (e.code === 'Space') {
+                    e.preventDefault();
+                    togglePlayPause();
+                } else if (e.code === 'KeyM') {
+                    e.preventDefault();
+                    toggleMute();
+                } else if (e.code === 'ArrowUp') {
+                    e.preventDefault();
+                    volume = Math.min(1, volume + 0.05);
+                    volumeSlider.value = Math.round(volume * 100);
+                    updateMasterVolume();
+                } else if (e.code === 'ArrowDown') {
+                    e.preventDefault();
+                    volume = Math.max(0, volume - 0.05);
+                    volumeSlider.value = Math.round(volume * 100);
+                    updateMasterVolume();
+                }
+                // Цифры 1-5 для переключения тем
+                const numMap = ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5'];
+                const idx = numMap.indexOf(e.code);
+                if (idx >= 0 && idx < themes.length) {
+                    e.preventDefault();
+                    const themeId = themes[idx].id;
+                    applyTheme(themeId);
+                    if (!isPlaying) resumePlayback();
+                }
+            });
+
+            // ==================== ИНИЦИАЛИЗАЦИЯ ====================
+            function init() {
+                buildCards();
+                applyTheme(currentThemeId);
+                volumeSlider.value = Math.round(volume * 100);
+                updateMasterVolume();
+                // Предварительно не запускаем звук — ждём действия пользователя
+                nowPlaying.textContent = '🎵 Нажми на карточку, чтобы начать';
+                playIcon.textContent = '▶';
+                playLabel.textContent = 'Играть';
+                isPlaying = false;
+            }
+
+            init();
+
+            // Сброс при уходе со страницы
+            window.addEventListener('beforeunload', () => {
+                stopAllSounds();
+                if (audioContext && audioContext.state !== 'closed') {
+                    audioContext.close();
+                }
+            });
+
+            console.log('🌿 Атмосферный плеер готов!');
+            console.log('  🖱️ Кликай по карточкам для выбора фона и музыки');
+            console.log('  ⌨️ Клавиши 1-5 — переключение тем');
+            console.log('  ⌨️ Пробел — play/pause, M — mute');
+            console.log('  ⌨️ Стрелки ↑↓ — громкость');
+        })();
+    </script>
+</body>
+
+</html>
